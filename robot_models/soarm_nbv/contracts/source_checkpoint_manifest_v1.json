@@ -1,0 +1,227 @@
+{
+  "contract": "smolvla_source_checkpoint_manifest",
+  "version": 1,
+  "status": "phase0_contract_only",
+  "runtime_active": false,
+  "hash_algorithm": "sha256",
+  "canonical_inventory_encoding": "UTF-8 JSON array sorted by relative path, compact separators, each entry [path, sha256]; aggregate is SHA-256 of those bytes.",
+  "checkpoint_root": "/home/iy/Isaac/Robotics/data/smolvla_runs/go2_soarm_open_top_drawer_20k/checkpoints/020000/pretrained_model",
+  "checkpoint_files": {
+    "config.json": "49b76d1e7359f86d551d7d2b71ec871a5ce031fd89f65ed89d5993fb229c85c4",
+    "model.safetensors": "3fa57237a7f0b3e122bdf925baea0cb3a2242665a02241e6b7e1d615dba3f298",
+    "policy_postprocessor.json": "2b78bb742065288df2ec63b0ee35f97a1f6950171cf2272f7e34b1fe3873b17b",
+    "policy_postprocessor_step_0_unnormalizer_processor.safetensors": "6fd9f034529d721b3e9a0d523766f320a15d8ac7f427f4fbc19172a53d99de00",
+    "policy_preprocessor.json": "9bc12ca5db30ac549cd36a599f9362bb8b693c5ba343ac2de8c7d6dc18e4b462",
+    "policy_preprocessor_step_5_normalizer_processor.safetensors": "6fd9f034529d721b3e9a0d523766f320a15d8ac7f427f4fbc19172a53d99de00",
+    "train_config.json": "e31e534cb378bcf0fd1b9bf6fe570f251fc8dc695ef18a075c38e94f964f0a46"
+  },
+  "runner_sources": {
+    "/home/iy/Isaac/Robotics/robot_models/soarm_nbv/smolvla_policy_runner.py": "e246bce9adee72c091fbbab2ec00f8a39702fb5fe58bf578acbdb2a1ce0cef8f",
+    "/home/iy/Isaac/Robotics/robot_models/soarm_nbv/robot_model_profile.py": "5b75a117a26be865764624758323e1e3de8423dcda3eb2bc9f990c23a5937dea"
+  },
+  "lerobot": {
+    "source_root": "/home/iy/Isaac/lerobot",
+    "git_commit": "0db5f66ddae6afd62454c418771286fa64dbea20",
+    "environment": "/home/iy/miniconda3/envs/lerobot",
+    "python": "3.12.13",
+    "packages": {
+      "lerobot": "0.5.1",
+      "torch": "2.10.0",
+      "numpy": "2.2.6"
+    },
+    "environment_files": {
+      "/home/iy/Isaac/lerobot/pyproject.toml": "b4c57025bb46f77941642172f89abd68ebfa3e4832dbb791bd377808ea41ea03",
+      "/home/iy/Isaac/lerobot/uv.lock": "023c1ac615a085c31e3867928131a402ba59001419f82436288a3d6f47d4a1af",
+      "/home/iy/miniconda3/envs/lerobot/conda-meta/history": "193e1962797520b79e84f66cf4f2ea5f25a7fb550a8b484ed22998a583be7c66"
+    },
+    "abi_source_inventory": {
+      "roots": [
+        "src/lerobot/processor",
+        "src/lerobot/policies/smolvla"
+      ],
+      "suffix": ".py",
+      "file_count": 21,
+      "aggregate_sha256": "778d6b7eddd7a8f9071b9a594b2b463d1eed3ae9f514fdf30fc0f3d86c812281",
+      "direct_imports": {
+        "src/lerobot/processor/converters.py": "2b97131f34c4881e93e7b864091637fac8ce1642a6620ed9330e84372e113640",
+        "src/lerobot/processor/pipeline.py": "b3a8ebd99fc6ff1dd92a78548275d2eae3ab8327529414a10727060c9211f2eb",
+        "src/lerobot/policies/smolvla/configuration_smolvla.py": "6c55f3dea30a3c9571ecaa3dccf599dab9240a6eaa658b3fbc507273778b49aa",
+        "src/lerobot/policies/smolvla/modeling_smolvla.py": "97bc864d9ef136a9483a6c33f9b46ce28f172084320631a72e48e9889b8c7ba3"
+      }
+    },
+    "dirty_tree": {
+      "unstaged_binary_diff_sha256": "9be544583fe4a1b318514811dc6602c521bff813dd5582031df7ac81044cbddc",
+      "staged_binary_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "untracked_roots": [
+        "calibration",
+        "calibration_backup/",
+        "hub/",
+        "lerobot/",
+        "local/",
+        "notes/",
+        "yeongrae/"
+      ],
+      "untracked_file_inventory_aggregate_sha256": "6f7038c86919c34cc3680a790307bfb06b9caf4532ba6c60c43f85cbc56a3f4f",
+      "untracked_entry_encoding": "sorted git ls-files --others --exclude-standard entries; each [relative_path, file|symlink, SHA-256 file bytes|literal symlink target]; JSON compact UTF-8 ensure_ascii=true.",
+      "git_ls_files_others_exclude_standard": [
+        [
+          "calibration",
+          "symlink",
+          "/home/iy/.cache/huggingface/lerobot/calibration"
+        ],
+        [
+          "calibration_backup/f_arm.json",
+          "file",
+          "337dac18c4f738d313a3a570da3a73f3d3cd444cd97adc2b19e22f34ddbe016a"
+        ],
+        [
+          "calibration_backup/robots/so_follower/f_arm.json",
+          "file",
+          "8016d7ad034784e64079e929b693e0819b46664477a79d6dfddaab01f54b0f6f"
+        ],
+        [
+          "calibration_backup/robots/so_follower/my_follower.json",
+          "file",
+          "b3a191f435568c1510c75d1dce47f91053f429ca2aa78ae5139c193c1d788555"
+        ],
+        [
+          "calibration_backup/robots/so_follower/sim_follower.json",
+          "file",
+          "63b4cb8e46bdf84eea22896500c295da776ee640de6e64c79863784375c71768"
+        ],
+        [
+          "calibration_backup/robots/so_follower/so-arm.json",
+          "file",
+          "12b5e09d4c0b6bbba7f9fecc5eec9232c88ffc451570391a379ea8c1bb0f33ea"
+        ],
+        [
+          "calibration_backup/robots/so_follower/so_follower.json",
+          "file",
+          "63b4cb8e46bdf84eea22896500c295da776ee640de6e64c79863784375c71768"
+        ],
+        [
+          "calibration_backup/so-arm.json.bak",
+          "file",
+          "ad2dc01b31f24fbb0c0b4e958d7d8f4018b5d32ff0bd7d093b2d10f50262197e"
+        ],
+        [
+          "calibration_backup/teleoperators/so_leader/l_arm.json",
+          "file",
+          "c970a81f00725b37175584977379803885fb5cf74473e66a58aca6c778cbef92"
+        ],
+        [
+          "calibration_backup/teleoperators/so_leader/so-arm.json",
+          "file",
+          "d87e2e4140e5cf102490c81bef9bb8e95185408b2150e1d7e7b8677d7c15f443"
+        ],
+        [
+          "calibration_backup/teleoperators/so_leader/teleop_leader_v1.json",
+          "file",
+          "176f4e8e2ee1badb2e011ae07636174ac60e35a57fb451261c17f35719a3db26"
+        ],
+        [
+          "hub/CACHEDIR.TAG",
+          "file",
+          "f6572428f6d5e1575e73a1502895a8731f10757dfbb634909c6e154b849af91d"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/added_tokens.json",
+          "file",
+          "4dd6146d2eccfb4a5c8e147df8876eb92be19ed60a3e65aab4d5d3e9f51f6d6a"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/chat_template.json",
+          "file",
+          "f4a71030443c5d03a0ef0abb9bef5c9110cacf852ddc49710b22fa2a2bd7a3b9"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/config.json",
+          "file",
+          "096558b94a093392956f707e7b992a34f55081799fefd646cd168b25642b3924"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/configuration_eagle2_5_vl.py",
+          "file",
+          "cad789f4f795d1e804f1ab4f955bfe9ae71c7bd5f06f188fe739534a2157c7b9"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/generation_config.json",
+          "file",
+          "f15f5de33244a61325923e99bad2c061029acb8d6dd5c57f8458b3949ddd8f97"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/image_processing_eagle2_5_vl_fast.py",
+          "file",
+          "774df00e9f79784b1e5bcf4812c26644363efa63a610fdb71825f2d58e4f4204"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/merges.txt",
+          "file",
+          "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/modeling_eagle2_5_vl.py",
+          "file",
+          "53b196130b4f69430e7d7bd20b9e3c9f4fa472f28af80dee607d90325cbdb906"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/preprocessor_config.json",
+          "file",
+          "b37b7dcf753d6a4c52357c208e2d60cfeb9216681fc301b21bee65da201d2d5c"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/processing_eagle2_5_vl.py",
+          "file",
+          "a3fbd8afe9fcab67030292ef1c04004d5b6b58ed925bc128a3c895f1167795c1"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/processor_config.json",
+          "file",
+          "bef09de1f7e4ba975911576028a174d7a49b4e1c2e4a2d5f6d5f400ac4631ae5"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/special_tokens_map.json",
+          "file",
+          "1f7a26d4bd862741d920097c370aaac4010b483c0dec3c85e2b42954cd8ea342"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/tokenizer_config.json",
+          "file",
+          "88cfe3a9605b59cfa6757797f66085f958b4cd81820781ea1a48c5ae690b8232"
+        ],
+        [
+          "lerobot/eagle2hg-processor-groot-n1p5/vocab.json",
+          "file",
+          "87a257b04b17642a0688c98cd1df89c398bda4fee532d6f88b38a659ecb4ac8d"
+        ],
+        [
+          "local/clean_desk_v2",
+          "symlink",
+          "/home/iy/lerobot/data/local/data/clean_desk"
+        ],
+        [
+          "local/local",
+          "symlink",
+          "/home/iy/lerobot/data/local"
+        ],
+        [
+          "notes/pi0_memo.txt",
+          "file",
+          "b5c6bb8480c6e044e201cf05cc24b8b398c62d70e1a01ad9c90342174a21f089"
+        ],
+        [
+          "yeongrae/find_hidden_part_of_object/meta/info.json",
+          "file",
+          "e1e202293121ccf13ac7dc88640888784eb60579c17988dae2ae66495b8c2ca3"
+        ],
+        [
+          "yeongrae/test_run/meta/info.json",
+          "file",
+          "01496dcf006a313e2bdab77b471cf1fbb3934255f5f8acf38a84dc43545b56a8"
+        ]
+      ],
+      "git_ls_files_others_exclude_standard_nul_sha256": "d1ca9b6e55019ebf2b5b0dceebba1f7c3742a11e1cce543a670b74e8cd0f07cb",
+      "untracked_entry_inventory_sha256": "8551ba83b60fd4c15f089aafa323a0b970f266ca5bdc1c55450bd2e3f9218d20"
+    }
+  }
+}

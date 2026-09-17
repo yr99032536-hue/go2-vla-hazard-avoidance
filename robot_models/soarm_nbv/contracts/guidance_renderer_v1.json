@@ -1,0 +1,29 @@
+{
+  "contract": "guidance_renderer_v1",
+  "version": 1,
+  "status": "normative_external_contract",
+  "output": {"type": "RGB uint8 raster", "width_px": 640, "height_px": 480, "model_payload": "camera3 only", "byte_order": "row-major RGB"},
+  "frame_and_projection": {"source_camera": "front_optical", "map_frame": "right-handed ROS map", "transform": "p_c = T_front_optical_map * p_map", "optical_axes": {"x": "right", "y": "down", "z": "forward"}, "projection": "u = fx*x/z + cx; v = fy*y/z + cy", "camera_info": "exact front CameraInfo locked to the same source stamp and revision", "desired_direction": "normalize(project(desired_wrist_optical_center) - project(target_center))"},
+  "raster": {"canvas_rgb_hex": "#101820", "draw_order": ["border", "target", "direction"], "border": {"rgb_hex": "#607D8B", "thickness_px": 2, "rectangle": [1, 1, 638, 478]}, "target": {"rgb_hex": "#FFD400", "circle_radius_px": 18, "circle_thickness_px": 4, "cross_arm_length_px": 10, "cross_thickness_px": 3}, "direction_arrow": {"rgb_hex": "#00E5FF", "length_px": 80, "thickness_px": 6, "tip_length_px": 20, "tip_half_width_px": 10, "endpoint_clip_inset_px": 8, "shaft": "center to endpoint minus tip_length along unit direction", "tip": "filled triangle(endpoint, base + perpendicular*half_width, base - perpendicular*half_width)"}, "coordinate_rounding": "round-half-away-from-zero", "opencv": {"version": "4.13.0", "api": "cv2.rectangle, cv2.circle, cv2.line, cv2.fillConvexPoly", "line_type": "LINE_8", "antialiasing": "forbidden", "color_conversion": "reverse each declared RGB triplet to BGR only at the OpenCV drawing call; output bytes remain row-major RGB"}},
+  "validity": {"all_scalars_transforms_intrinsics": "finite", "tf_and_camera_info_max_age_ms": 50, "revisions": "exact match", "target_and_desired_wrist_depth": "both projected camera-frame z values are finite and > 0", "rounded_target_center_inset": {"u": [22, 617], "v": [22, 457]}, "projected_direction_min_norm_px": 4, "arrow_endpoint": "clip along direction ray to the 8 px canvas inset before fixed triangular tip", "target_center_clipping": "forbidden"},
+  "invalid_result": {"type": "GUIDANCE_INVALID", "reasons": ["non_finite", "target_behind_camera", "desired_wrist_behind_camera", "stale_transform_or_camera_info", "revision_mismatch", "target_out_of_inset", "degenerate_direction"], "inference": "suppressed; supervisor rejects, reselects, or abandons under its bounded counter", "neutral_image": "legal only for shadow causal controls; never a production substitute"},
+  "prohibited_overlays": ["live RGB context", "text", "digits", "bars", "mask fills", "depth shading", "map values", "health", "collision", "completion", "confidence", "phase", "retry", "metadata"],
+  "provenance": ["renderer source/version", "OpenCV version", "front CameraInfo", "transform", "inputs", "source PNG SHA-256"],
+  "golden_fixtures": [
+    {"id": "center_right", "target_center": [320, 240], "desired_projection": [400, 240], "direction_unit": [1, 0], "arrow_nominal_endpoint": [400, 240], "raster_sha256": "53e496a4425f056c56fcc07dc024226dd86a1bf69b7b0793b991cd31ae9a6aaf"},
+    {"id": "center_up", "target_center": [320, 240], "desired_projection": [320, 160], "direction_unit": [0, -1], "arrow_nominal_endpoint": [320, 160], "raster_sha256": "a313d5a55f4ac1db12248e4d03eb0671bb6eb76f49e300d8b8d2f281473a5811"},
+    {"id": "left_inset", "target_center": [22, 240], "desired_projection": [102, 240], "raster_sha256": "efc2be0b3ff1d08ba2989e305a07740151d0f37680472c0eb2c48fcdab515ff4"},
+    {"id": "right_inset", "target_center": [617, 240], "desired_projection": [537, 240], "raster_sha256": "6a0bad0a93c2300731621247d79c7269489cb940858c58a3e17c0acb20091114"},
+    {"id": "top_inset", "target_center": [320, 22], "desired_projection": [320, 102], "raster_sha256": "df5ac32c42fd58d35e2c2fe680a3c43ff2fc5a95ba1774cdb8788ddd92d61799"},
+    {"id": "bottom_inset", "target_center": [320, 457], "desired_projection": [320, 377], "raster_sha256": "649f98625477b05a5774f43e1ae4dbafef28876f562a463b3ee2bf7a30ea1593"},
+    {"id": "clip_right", "target_center": [617, 240], "desired_projection": [697, 240], "clipped_endpoint": [631, 240], "raster_sha256": "3e302fe761be67580c2cd8c5e2cb4efeca7f34f23d43fd7ed40e7bc7b48ec137"},
+    {"id": "clip_bottom", "target_center": [320, 457], "desired_projection": [320, 537], "clipped_endpoint": [320, 471], "raster_sha256": "84965d2845563cdb2f4fafb3f8c43579ac9cfef956adcec27c8ccc365379baa6"},
+    {"id": "clip_diagonal", "target_center": [617, 457], "desired_projection": [697, 537], "clipped_endpoint": [631, 471], "raster_sha256": "2b75f8030aa2204b9582dc3efa3d562364f12b95c21ed310c6456839c1f2eb51"},
+    {"id": "target_behind", "target_camera": [0, 0, -1], "expected": "GUIDANCE_INVALID"},
+    {"id": "desired_wrist_behind", "desired_wrist_camera": [0, 0, -1], "expected": "GUIDANCE_INVALID"},
+    {"id": "non_finite_transform", "transform_scalar": "NaN", "expected": "GUIDANCE_INVALID"},
+    {"id": "stale_revision", "revision_match": false, "expected": "GUIDANCE_INVALID"},
+    {"id": "degenerate_direction", "target_center": [320, 240], "desired_projection": [323, 240], "expected": "GUIDANCE_INVALID"},
+    {"id": "two_target_camera3_only", "shared_wrist_front_state_task": true, "target_a": [320, 240], "target_b": [400, 240], "expected": "distinct guidance rasters only"}
+  ]
+}

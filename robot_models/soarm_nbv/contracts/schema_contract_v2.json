@@ -1,0 +1,504 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://robot_models.local/contracts/smolvla-black-box-abi-v2.schema.json",
+  "title": "Immutable SmolVLA model dictionary ABI",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observation.images.camera1",
+    "observation.images.camera2",
+    "observation.images.camera3",
+    "observation.state",
+    "task"
+  ],
+  "properties": {
+    "observation.images.camera1": {
+      "$ref": "#/$defs/camera1"
+    },
+    "observation.images.camera2": {
+      "$ref": "#/$defs/camera2"
+    },
+    "observation.images.camera3": {
+      "$ref": "#/$defs/camera3"
+    },
+    "observation.state": {
+      "$ref": "#/$defs/externalState"
+    },
+    "task": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  },
+  "$defs": {
+    "contract": {
+      "version": 2,
+      "status": "phase0_contract_only",
+      "runtime_active": false,
+      "public_loader": "SmolVLAPolicy.from_pretrained",
+      "public_inference": "policy.select_action",
+      "public_reset": "policy.reset",
+      "exact_model_keys": [
+        "observation.images.camera1",
+        "observation.images.camera2",
+        "observation.images.camera3",
+        "observation.state",
+        "task"
+      ],
+      "task_utf8_byte_length": {
+        "minimum": 1,
+        "maximum": 256,
+        "validator": "UTF-8 encoded task bytes; JSON Schema maxLength remains code-point bound."
+      },
+      "transaction_task_bound": {
+        "contract": "transaction_v2.json",
+        "frame": "OBS2.task",
+        "minimum_bytes": 1,
+        "maximum_bytes": 256
+      },
+      "model_output": {
+        "dtype": "float32",
+        "shape": [
+          6
+        ],
+        "unit": "degrees"
+      }
+    },
+    "rgb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "layout",
+        "shape",
+        "color"
+      ],
+      "properties": {
+        "dtype": {
+          "const": "uint8"
+        },
+        "layout": {
+          "const": "HWC"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "const": "RGB"
+        }
+      }
+    },
+    "camera1": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/rgb"
+        },
+        {
+          "properties": {
+            "shape": {
+              "const": [
+                240,
+                320,
+                3
+              ]
+            }
+          }
+        }
+      ],
+      "description": "wrist RGB"
+    },
+    "camera2": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/rgb"
+        },
+        {
+          "properties": {
+            "shape": {
+              "const": [
+                480,
+                640,
+                3
+              ]
+            }
+          }
+        }
+      ],
+      "description": "front RGB"
+    },
+    "camera3": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/rgb"
+        },
+        {
+          "properties": {
+            "shape": {
+              "const": [
+                480,
+                640,
+                3
+              ]
+            }
+          }
+        }
+      ],
+      "description": "external guidance RGB compatibility slot; current runner binding is room_tensor.clone(); Phase 1 may replace only these pixels."
+    },
+    "externalState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "shape",
+        "unit",
+        "values"
+      ],
+      "properties": {
+        "dtype": {
+          "const": "float32"
+        },
+        "shape": {
+          "const": [
+            6
+          ]
+        },
+        "unit": {
+          "const": "degrees"
+        },
+        "values": {
+          "const": "finite actual observation-time external joint state"
+        }
+      }
+    },
+    "float32Vector6": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dtype",
+        "shape",
+        "unit",
+        "values"
+      ],
+      "properties": {
+        "dtype": {
+          "const": "float32"
+        },
+        "shape": {
+          "const": [
+            6
+          ]
+        },
+        "unit": {
+          "const": "degrees"
+        },
+        "values": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "datasetLabelEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_uuid",
+        "episode_id",
+        "request_uuid",
+        "decision_epoch",
+        "map_revision",
+        "target_revision",
+        "application_uuid",
+        "authorization_uuid",
+        "path_sha256",
+        "result",
+        "ack",
+        "dataset_action_external_deg",
+        "ack_authorized_target_external_deg",
+        "counts",
+        "settled",
+        "episode_disposition"
+      ],
+      "properties": {
+        "snapshot_uuid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_uuid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_epoch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "map_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "application_uuid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorization_uuid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path_sha256": {
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "snapshot_uuid",
+            "episode_id",
+            "request_uuid",
+            "decision_epoch",
+            "map_revision",
+            "target_revision",
+            "application_uuid",
+            "authorization_uuid",
+            "path_sha256",
+            "code"
+          ],
+          "properties": {
+            "snapshot_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "episode_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "decision_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "map_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "application_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authorization_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path_sha256": {
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "code": {
+              "const": "COMPLETED"
+            }
+          }
+        },
+        "ack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "snapshot_uuid",
+            "episode_id",
+            "request_uuid",
+            "decision_epoch",
+            "map_revision",
+            "target_revision",
+            "application_uuid",
+            "authorization_uuid",
+            "path_sha256",
+            "ack_uuid",
+            "type"
+          ],
+          "properties": {
+            "snapshot_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "episode_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "decision_epoch": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "map_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "target_revision": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "application_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authorization_uuid": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path_sha256": {
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "ack_uuid": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Unique ArmApplicationAck identity for this application; counts.ack == 1 forbids duplicate evidence."
+            },
+            "type": {
+              "const": "ArmApplicationAck"
+            }
+          }
+        },
+        "dataset_action_external_deg": {
+          "$ref": "#/$defs/float32Vector6"
+        },
+        "ack_authorized_target_external_deg": {
+          "$ref": "#/$defs/float32Vector6"
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "result",
+            "ack"
+          ],
+          "properties": {
+            "result": {
+              "const": 1
+            },
+            "ack": {
+              "const": 1
+            }
+          }
+        },
+        "settled": {
+          "const": true
+        },
+        "episode_disposition": {
+          "const": "accepted"
+        }
+      }
+    },
+    "datasetLabelRejection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_disposition",
+        "rejection_reasons"
+      ],
+      "properties": {
+        "episode_disposition": {
+          "const": "rejected"
+        },
+        "rejection_reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "missing_evidence",
+              "duplicate_ack",
+              "duplicate_result",
+              "identity_mismatch",
+              "path_mismatch",
+              "non_completed",
+              "unsettled",
+              "target_misalignment",
+              "vector_mismatch"
+            ]
+          }
+        }
+      }
+    },
+    "joint_order": {
+      "const": [
+        "shoulder_pan",
+        "shoulder_lift",
+        "elbow_flex",
+        "wrist_flex",
+        "wrist_roll",
+        "gripper"
+      ]
+    },
+    "fixtures": {
+      "positive": {
+        "observation.images.camera1": {
+          "dtype": "uint8",
+          "layout": "HWC",
+          "shape": [
+            240,
+            320,
+            3
+          ],
+          "color": "RGB"
+        },
+        "observation.images.camera2": {
+          "dtype": "uint8",
+          "layout": "HWC",
+          "shape": [
+            480,
+            640,
+            3
+          ],
+          "color": "RGB"
+        },
+        "observation.images.camera3": {
+          "dtype": "uint8",
+          "layout": "HWC",
+          "shape": [
+            480,
+            640,
+            3
+          ],
+          "color": "RGB"
+        },
+        "observation.state": {
+          "dtype": "float32",
+          "shape": [
+            6
+          ],
+          "unit": "degrees",
+          "values": "finite actual observation-time external joint state"
+        },
+        "task": "open the top drawer"
+      },
+      "negative_extra_key": {
+        "task": "x"
+      },
+      "negative_non_ascii_task": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+    }
+  }
+}

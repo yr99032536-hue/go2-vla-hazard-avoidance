@@ -64,3 +64,64 @@ cd /home/iy/Isaac/Go2_Intelligence_Framework
 - `/home/iy/Isaac/Robotics/robot_models/soarm_nbv/` — SmolVLA 실행기·데이터 계약
 - `/home/iy/Isaac/Robotics/robot_models/src/sim/go2_soarm.py` — Isaac Sim 로봇 실행
 
+## 저장소 구조
+
+```
+go2-vla-hazard-avoidance/
+├── README.md
+├── framework/                  # Go2_Intelligence_Framework 실험 코드
+│   ├── scripts/                # 실행 스크립트
+│   │   ├── run_binary_tree_vision_demo.sh      # VLA 평가 실행
+│   │   ├── run_binary_tree_hazard_demo.sh      # 교사 시연
+│   │   ├── run_binary_tree_human_collect.sh    # 사람 교사 수집
+│   │   ├── run_binary_tree_nbv_collect.sh      # NBV 교사 수집
+│   │   └── ...
+│   └── src/
+│       ├── go2_active_slam/            # 주행 감독기 ROS 2 패키지
+│       └── go2_active_slam_interfaces/ # 메시지·서비스 정의
+└── robot_models/               # Robotics/robot_models 실험 코드
+    ├── soarm_nbv/              # SmolVLA 실행기·데이터 계약·수집기
+    │   ├── smolvla_hazard_policy_runner.py     # SmolVLA 추론 실행기
+    │   ├── hazard_vla_contract.py              # 8차원 액션 계약
+    │   ├── hazard_vla_runtime.py               # 판정 게이트·전송
+    │   └── ...
+    └── src/
+        ├── go2_soarm.py                        # Isaac Sim 로봇 실행
+        ├── generate_binary_tree_hazard_map.py  # 3단 골목 맵 생성
+        ├── run_active_slam_binary_tree_ros2.sh # Isaac Sim 런처
+        └── verify_go2_policy_abi.py            # 보행 정책 검증
+```
+
+## 사전 준비
+
+이 코드는 다음 환경을 가정한다.
+
+- Isaac Sim 5.1 + Isaac Lab
+- ROS 2 Humble
+- LeRobot (SmolVLA)
+- Go2 보행 정책 체크포인트 (12999)
+- SmolVLA 파인튜닝 체크포인트 (7-state / 8-action)
+
+체크포인트와 대용량 데이터는 저장소에 포함하지 않았다. 로컬 경로는 다음과 같다.
+
+- 보행 정책: `/home/iy/Isaac/IsaacLab/logs/rsl_rl/unitree_go2_so101_7motor_reversed_flat/2026-09-02_05-03-06_home_extend_fold_walk_1024env_headless_lr1e4_v7/exported/policy.pt`
+- SmolVLA: `/home/iy/Isaac/Robotics/data/smolvla_runs/binary_tree_hazard_102_v2/checkpoints/020000/pretrained_model`
+
+## 실행 방법
+
+```bash
+# 1. ROS 2 워크스페이스 빌드 (framework/src 기준)
+cd framework
+colcon build --packages-select go2_active_slam_interfaces go2_active_slam
+
+# 2. 실행 스크립트에 robot_models 경로 전달
+export ROBOT_MODELS_ROOT=$(pwd)/../robot_models
+./scripts/run_binary_tree_vision_demo.sh
+```
+
+스크립트는 Isaac Sim, ROS 2, SmolVLA 실행기를 함께 띄우고 골목 위험 회피를 실행한다.
+
+## 참고 자료
+
+- [SmolVLA: A Vision-Language-Action Model for Affordable and Efficient Robotics](https://arxiv.org/abs/2506.01844)
+- 본 실험의 8번째 액션 설계(위험 판정 신호)는 위 논문의 기본 구조를 확장한 것이다.

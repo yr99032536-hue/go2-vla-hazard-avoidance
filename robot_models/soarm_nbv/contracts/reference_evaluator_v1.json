@@ -1,0 +1,59 @@
+{
+  "contract": "reference_evaluator_v1",
+  "version": 1,
+  "status": "normative_external_contract",
+  "frozen_evaluation_frame": {
+    "tsdf_voxel_size_m": 0.02,
+    "roi": "initial selected G0 axis-aligned bounding box inflated by 0.10 m on every side, intersected with scene evaluation bounds",
+    "immutable_within_paired_episode": ["ROI", "T_map_world", "graph_revision", "initial_gap_mask"],
+    "gap_component": "G0 is the detector connected initial unknown-voxel component after reachability and wall filtering"
+  },
+  "gap_reduction": {
+    "unknown_count": "U_t = count(v in G0 where TSDF_weight_t(v) = 0)",
+    "raw_formula": "R = 0 if U_0 = 0 or episode fails; otherwise R = 1 - U_after / U_0",
+    "reporting": "retain raw R; clip only reported R to [0, 1]"
+  },
+  "surface_distance": {
+    "gt_sampling": "exactly 10000 deterministic area-stratified mesh surface samples from (scene_manifest, episode_seed), transformed by frozen T_map_world",
+    "reconstruction_surface": "zero-crossing vertices within ROI with TSDF weight > 0",
+    "distance": "d_i = min_q ||p_i - q||",
+    "failure_rule": "missing surface, terminal failure, NaN, or unexplained output sets all 10000 distances to +inf",
+    "quantization": "finite distances round to nearest 0.001 m, ties to even, before statistics"
+  },
+  "completeness": {
+    "formula": "C_tau = count(d_i <= 0.05) / 10000",
+    "failure_value": 0,
+    "improvement_formula": "100 * (C_after - C_before) percentage points",
+    "improvement_failure_value": 0
+  },
+  "eew_ped": {
+    "formula": "concatenate exactly 10000 quantized post distances from every scheduled episode, including +inf; apply numpy.percentile(method='higher')",
+    "percentiles": [50, 95],
+    "infinity": "never filtered or capped",
+    "thirty_episode_failure_behavior": {"one_failure_inf_fraction": "3.33%", "one_failure_p95": "may remain finite", "two_failure_inf_fraction": "6.67%", "two_failure_p95": "+inf"}
+  },
+  "scoring": {
+    "operational_episode_success": "normal COMPLETE within budgets AND at least one authorized wrist window fused AND U_after < U_0 AND all required metrics finite AND zero forbidden collisions",
+    "cohort_success": "successful scheduled episodes / scheduled episodes; no silent rerun",
+    "prestart_infrastructure_retry": "declared pre-start infrastructure failure may rerun once; retain both records and fix scheduled adjudication before execution",
+    "macro_aggregation": "gap, completeness, and completeness improvement are macro-means over scheduled episodes with failures scored as zero",
+    "collision": "any forbidden collision fails the episode and the absolute zero-collision stage gate"
+  },
+  "pairing": {
+    "go2_only": "identical scene, noise, and navigation trace until arm handoff",
+    "stage4": "concatenate each lane quantized 10000-distance arrays over the same manifest; integrated minus Go2-only P50 <= 0 and P95 <= 0; ties pass; missing or NaN fails"
+  },
+  "stage_thresholds": {
+    "stage2_fixed_30": {"episodes": 30, "macro_gap_min": 0.70, "completeness_min": 0.80, "p50_max_m": 0.05, "p95_max_m": 0.10, "success_min": "27/30", "forbidden_collisions": 0},
+    "stage3_each_family_and_aggregate": {"family_episodes": 10, "aggregate_episodes": 30, "macro_gap_min": 0.50, "completeness_improvement_min_pp": 20, "p50_max_m": 0.05, "family_success_min": "8/10", "aggregate_success_min": "24/30", "forbidden_collisions": 0},
+    "stage4_unseen": {"episodes": 30, "macro_gap_min": 0.30, "paired_p50_p95_no_worse": true, "success_min": "21/30", "forbidden_collisions": 0, "provenance": "disjoint"}
+  },
+  "golden_fixtures": [
+    {"id": "gap_reduction", "four_cell_case": {"U_0": 4, "U_after": 1, "expected_raw_R": 0.75, "expected_reported_R": 0.75}, "zero_initial_case": {"U_0": 0, "U_after": 0, "expected_raw_R": 0, "invalid_fixture": true}},
+    {"id": "quantized_completeness_percentiles", "quantized_distances_m": [0.01, 0.02, 0.04, 0.08], "expected_completeness_at_0_05": 0.75, "expected_p50_higher_m": 0.04, "expected_p95_higher_m": 0.08},
+    {"id": "completeness_improvement", "C_before": 0.25, "C_after": 0.75, "expected_percentage_points": 50},
+    {"id": "infinity_higher", "episodes": 30, "one_failed_episode_expected_p95": "finite", "two_failed_episodes_expected_p95": "+inf"},
+    {"id": "paired_no_worsening", "integrated_m": [0.01, 0.02, 0.03, 0.04], "go2_only_m": [0.02, 0.03, 0.04, 0.05], "expected": "pass", "reversed_expected": "fail"},
+    {"id": "collision_failure", "perfect_geometry": true, "forbidden_collision": true, "expected_success": false, "expected_gap_R": 0, "expected_completeness": 0, "expected_distances": "10000 x +inf"}
+  ]
+}

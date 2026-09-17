@@ -1,0 +1,110 @@
+contract: active_slam_safety
+version: 2
+status: phase0_contract_only
+runtime_active: false
+external_joint_order:
+  - shoulder_pan
+  - shoulder_lift
+  - elbow_flex
+  - elbow_rotate
+  - wrist_flex
+  - wrist_roll
+  - gripper
+external_joint_encoding: finite_float32_degrees
+joint_limits_deg:
+  shoulder_pan: [-110.0, 110.0]
+  shoulder_lift: [0.0, 207.0]
+  elbow_flex: [-270.001, 90.0]
+  elbow_rotate: [-90.0, 90.0]
+  wrist_flex: [-95.0, 95.0]
+  wrist_roll: [-157.21102, 162.78934]
+  gripper: [-110.0, 0.0]
+dynamics:
+  maximum_delta_deg: 5.0
+  maximum_velocity_deg_s: [60.0, 60.0, 90.0, 90.0, 90.0, 120.0, 100.0]
+  maximum_acceleration_deg_s2: [120.0, 120.0, 180.0, 180.0, 180.0, 240.0, 200.0]
+  interpolation_period_ms: 5
+  maximum_swept_joint_step_deg: 2.0
+  maximum_trajectory_points: 128
+  maximum_trajectory_duration_s: 5.0
+workspace:
+  frame: base_link
+  end_effectors: [wrist_optical_center, gripper_optical_center]
+  x_m: [-0.05, 0.75]
+  y_m: [-0.5, 0.5]
+  z_m: [0.04, 0.85]
+  excluded_base_body_cylinder:
+    radius_m: 0.18
+    applies_below_z_m: 0.45
+swept_checks:
+  clearance_m: 0.02
+  applies_to: arm_swept_volume
+  required: [finite_order_unit_schema, joint_limits, delta, velocity, acceleration, workspace, lula_path, supervisor_collision, physx_scene_distance, physx_swept_query, enabled_colliders]
+  application_revalidation: required
+  application_interpolation_ms: 5
+  reject_if_path_regenerated: true
+settle:
+  base_linear_velocity_max_m_s: 0.02
+  base_angular_velocity_max_rad_s: 0.03
+  base_continuous_duration_s: 0.5
+  base_timeout_s: 5.0
+  arm_velocity_max_rad_s: 0.02
+  wrist_drift_max_m: 0.002
+  wrist_drift_max_deg: 0.2
+  arm_continuous_duration_s: 0.5
+  arm_timeout_s: 3.0
+  home_timeout_s: 5.0
+freshness:
+  snapshot_sensor_skew_max_ms: 50
+  proposal_age_max_ms: 100
+  authorization_expiry_ms: 100
+collision_taxonomy:
+  allowed:
+    - feet_with_tagged_traversable_ground
+    - urdf_adjacent_self_pairs
+  forbidden:
+    - non_foot_robot_environment
+    - foot_with_non_traversable_contact
+    - non_adjacent_self
+    - arm_base
+    - arm_environment
+  intentional_gripper_contact: false
+  active_mode: all_arm_collision_links_enabled
+  clearance_does_not_apply_to: support_feet
+contact_thresholds:
+  forbidden_penetration_m: 0.001
+  consecutive_physics_ticks: 2
+  physics_tick_ms: 5
+  forbidden_normal_impulse_n_s: 0.2
+  response: immediate_hold_and_episode_collision
+retries:
+  rejected_arm_proposals_per_target: 3
+  navigation_attempts_per_viewpoint: 2
+  tracking_reacquisitions: 2
+  validated_home_attempts: 1
+  reset_boundaries: [episode_start, new_target_epoch, successful_resume]
+sole_authority:
+  snapshot_publisher: supervisor_node
+  policy_request_client: supervisor_node
+  policy_request_server: policy_bridge_node
+  runner_transaction_owner: policy_bridge_node
+  apply_action_client: supervisor_node
+  apply_action_server: isaac_active_arm_trajectory_server
+  isaac_accepts: supervisor_authorized_complete_trajectory_only
+  bridge_apply_api: forbidden
+  runner_apply_api: forbidden
+  isaac_policy_socket_active_mode: forbidden
+  isaac_raw_model_proposal_subscription_active_mode: forbidden
+  shadow_model_application: forbidden
+  disabled_mode_arm_apply: forbidden
+  contract_sources:
+    transaction_wire_and_canonicalization: transaction_v2.json
+    ros_interface_types_and_qos: /home/iy/Isaac/Go2_Intelligence_Framework/config/active_slam_interfaces_v2.yaml
+  authorization_requirements: [canonical_path_sha256, RFC2104_HMAC_SHA256, single_use_authorization_uuid, exact_final_point_target_match, byte_equivalent_completed_result_ack]
+reject_not_clip:
+  reject_nonfinite: true
+  reject_out_of_limit: true
+  reject_dynamic_or_workspace_violation: true
+  reject_collision_or_contact_violation: true
+  reject_stale_replayed_or_mismatched_identity: true
+  forbidden_operations: [clip, nan_to_num, smoothing_into_range, partial_path, alternate_application_path]

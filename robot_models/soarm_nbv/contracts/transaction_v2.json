@@ -1,0 +1,995 @@
+{
+  "contract": "smolvla_policy_transaction",
+  "version": 2,
+  "status": "phase0_contract_only",
+  "runtime_active": false,
+  "transport": {
+    "pattern": "ZMQ REQ/REP",
+    "client_owner": "go2_active_slam.policy_bridge_node.PolicyBridgeNode",
+    "server_owner": "soarm_nbv.smolvla_policy_runner.PolicyTransactionServer",
+    "socket_options": {
+      "LINGER": 0
+    },
+    "one_in_flight_request": true,
+    "client_may_send": [
+      "RESET2",
+      "OBS2"
+    ],
+    "client_may_receive": [
+      "READY2",
+      "ACT2",
+      "ERR2"
+    ],
+    "forbidden_owners": [
+      "Isaac",
+      "go2_soarm active mode",
+      "supervisor_node",
+      "any arm application component"
+    ]
+  },
+  "identity": {
+    "protocol_version": 2,
+    "uuid_encoding": "16 raw bytes",
+    "required_correlation": [
+      "request_uuid",
+      "snapshot_uuid",
+      "episode_id",
+      "decision_epoch",
+      "map_revision",
+      "target_revision",
+      "deadline_ns"
+    ],
+    "runner_generation": "uint32",
+    "reset_counter": "uint64 monotonically increasing per runner generation",
+    "request_uuid_reuse": "forbidden",
+    "causal_pair": "each member uses a separate snapshot_uuid, request_uuid, and RESET2"
+  },
+  "frames": {
+    "RESET2": {
+      "direction": "bridge_to_runner",
+      "order": 1,
+      "runner_effect": "Validate identities and deadline, call public policy.reset() exactly once for this independent request, increment reset_counter, then reply READY2."
+    },
+    "READY2": {
+      "direction": "runner_to_bridge",
+      "order": 2
+    },
+    "OBS2": {
+      "direction": "bridge_to_runner",
+      "order": 3,
+      "runner_effect": "Validate freshness and READY2 correlation; strip every metadata/control field before inference; construct exactly camera1, camera2, camera3, state, and task; invoke unchanged standard processors and select_action."
+    },
+    "ACT2": {
+      "direction": "runner_to_bridge",
+      "order": 4
+    },
+    "ERR2": {
+      "direction": "runner_to_bridge",
+      "may_replace": [
+        "READY2",
+        "ACT2"
+      ]
+    }
+  },
+  "deadlines": {
+    "minimum_remaining_on_bridge_accept_ns": 1000000,
+    "warning_ns": 250000000,
+    "hard_transaction_ns": 400000000,
+    "proposal_max_age_ns": 100000000,
+    "timeout_effect": "ERR result, socket recreation, cached snapshot invalidation, and supervisor HOLD"
+  },
+  "restart_and_stale_behavior": {
+    "triggers": [
+      "READY2 or ACT2 mismatch",
+      "REP restart or generation change",
+      "hard deadline",
+      "action cancellation",
+      "mode change",
+      "revision change",
+      "malformed payload",
+      "bridge deactivation"
+    ],
+    "effect": "Close and recreate REQ socket, invalidate cached snapshot, return typed failure, and require supervisor HOLD.",
+    "retry": "Never retry the same request.",
+    "recovery": "Requires a new settled snapshot UUID, a new request UUID, and a new RESET2/READY2 handshake.",
+    "generation": "Any in-flight result from an earlier runner_generation is stale and returns RUNNER_RESTART."
+  },
+  "black_box_boundary": {
+    "model_input_keys": [
+      "camera1",
+      "camera2",
+      "camera3",
+      "state",
+      "task"
+    ],
+    "model_output": "exactly seven-motor float32 proposal",
+    "metadata_never_in_model_dictionary": [
+      "request_uuid",
+      "snapshot_uuid",
+      "episode_id",
+      "decision_epoch",
+      "map_revision",
+      "target_revision",
+      "deadline_ns",
+      "hashes",
+      "generations",
+      "reset_counter",
+      "authorization",
+      "trajectory",
+      "acknowledgment"
+    ],
+    "unchanged_model_contract": true
+  },
+  "idl_equivalent": {
+    "primitive_encoding": {
+      "integers": "two's-complement little-endian",
+      "float32": "IEEE-754 binary32 little-endian; finite only",
+      "bool": "uint8 0 or 1",
+      "enum": "uint8 exact assigned value",
+      "uuid": "uint8[16]",
+      "digest": "uint8[32]"
+    },
+    "enums": {
+      "mode": {
+        "DISABLED": 0,
+        "ORACLE": 1,
+        "SHADOW": 2,
+        "LEARNED": 3
+      },
+      "proposal_result_code": {
+        "OK": 0,
+        "SNAPSHOT_MISSING": 1,
+        "SNAPSHOT_MISMATCH": 2,
+        "STALE": 3,
+        "DEADLINE": 4,
+        "RUNNER_RESTART": 5,
+        "PROTOCOL": 6,
+        "MODEL_ERROR": 7,
+        "CANCELED": 8
+      },
+      "application_result_code": {
+        "COMPLETED": 0,
+        "REJECTED_PRESTART": 1,
+        "ABORTED_STALE": 2,
+        "ABORTED_CONTACT": 3,
+        "ABORTED_DIVERGENCE": 4,
+        "CANCELED": 5,
+        "INTERNAL_ERROR": 6
+      },
+      "proposal_source": {
+        "ORACLE": 0,
+        "LEARNED": 1,
+        "HUMAN": 2,
+        "HOME": 3
+      }
+    },
+    "arm_trajectory_point": {
+      "layout": [
+        [
+          "time_from_start_ns",
+          "int64"
+        ],
+        [
+          "position_external_deg",
+          "float32[7]"
+        ],
+        [
+          "velocity_external_deg_s",
+          "float32[7]"
+        ],
+        [
+          "acceleration_external_deg_s2",
+          "float32[7]"
+        ]
+      ],
+      "serialized_bytes": 92,
+      "constraints": [
+        "time_from_start_ns strictly increases",
+        "time_from_start_ns > 0",
+        "time_from_start_ns <= 5000000000",
+        "every float finite"
+      ]
+    },
+    "apply_trajectory_invariants": [
+      "points length is 1..128",
+      "last points.position_external_deg byte-exactly equals validated_target_external_deg",
+      "validated_target_external_deg byte-exactly equals authorized target carried by ArmApplicationAck on COMPLETED",
+      "SHA-256 path digest and HMAC must verify before authorization consumption"
+    ]
+  },
+  "canonical_serialization_v2": {
+    "version": 2,
+    "byte_order": "little-endian",
+    "record_envelope": "ASCII ASCV2 (5 bytes), uint16 domain_id, uint16 schema_version, uint16 field_count; every declared field appears once in ascending field_id order as uint16 field_id, uint32 payload_length, payload; reject omitted, unknown, duplicate, reordered, bad-length, and trailing fields.",
+    "type_rules": {
+      "uuid": "16 bytes",
+      "digest": "32 bytes",
+      "float32[7]": "28 finite bytes",
+      "int64": "8 bytes",
+      "uint64": "8 bytes",
+      "uint32": "4 bytes",
+      "uint16": "2 bytes",
+      "uint8": "1 byte valid enum",
+      "bool": "one byte 0 or 1",
+      "string<=N": "uint16 byte length plus exactly that UTF-8 payload",
+      "points": "uint16 count 1..128 then count * 92 bytes"
+    },
+    "domains": {
+      "snapshot": {
+        "id": 1,
+        "required_fields": [
+          "schema_version",
+          "snapshot_uuid",
+          "frame_authorization_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "snapshot_stamp_ns",
+          "wrist_stamp_ns",
+          "front_stamp_ns",
+          "state_stamp_ns",
+          "guidance_stamp_ns",
+          "expires_at_ns",
+          "mode",
+          "renderer_sha256",
+          "camera_info_sha256",
+          "snapshot_payload_sha256",
+          "camera1_wrist_rgb",
+          "camera2_front_rgb",
+          "camera3_guidance_rgb",
+          "state_external_deg",
+          "task"
+        ],
+        "fields": [
+          [
+            1,
+            "schema_version",
+            "uint16"
+          ],
+          [
+            2,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            3,
+            "frame_authorization_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            5,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            6,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            7,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            8,
+            "snapshot_stamp_ns",
+            "int64"
+          ],
+          [
+            9,
+            "wrist_stamp_ns",
+            "int64"
+          ],
+          [
+            10,
+            "front_stamp_ns",
+            "int64"
+          ],
+          [
+            11,
+            "state_stamp_ns",
+            "int64"
+          ],
+          [
+            12,
+            "guidance_stamp_ns",
+            "int64"
+          ],
+          [
+            13,
+            "expires_at_ns",
+            "int64"
+          ],
+          [
+            14,
+            "mode",
+            "enum(mode)"
+          ],
+          [
+            15,
+            "renderer_sha256",
+            "digest"
+          ],
+          [
+            16,
+            "camera_info_sha256",
+            "digest"
+          ],
+          [
+            17,
+            "snapshot_payload_sha256",
+            "digest"
+          ],
+          [
+            18,
+            "camera1_wrist_rgb",
+            "bytes[230400]"
+          ],
+          [
+            19,
+            "camera2_front_rgb",
+            "bytes[921600]"
+          ],
+          [
+            20,
+            "camera3_guidance_rgb",
+            "bytes[921600]"
+          ],
+          [
+            21,
+            "state_external_deg",
+            "float32[7]"
+          ],
+          [
+            22,
+            "task",
+            "string<=256"
+          ]
+        ]
+      },
+      "proposal": {
+        "id": 2,
+        "required_fields": [
+          "result_code",
+          "request_uuid",
+          "snapshot_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "produced_at_ns",
+          "runner_generation",
+          "reset_counter",
+          "proposal_external_deg",
+          "checkpoint_sha256",
+          "proposal_payload_sha256",
+          "reason"
+        ],
+        "fields": [
+          [
+            1,
+            "result_code",
+            "enum(proposal_result_code)"
+          ],
+          [
+            2,
+            "request_uuid",
+            "uuid"
+          ],
+          [
+            3,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            5,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            6,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            7,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            8,
+            "produced_at_ns",
+            "int64"
+          ],
+          [
+            9,
+            "runner_generation",
+            "uint32"
+          ],
+          [
+            10,
+            "reset_counter",
+            "uint64"
+          ],
+          [
+            11,
+            "proposal_external_deg",
+            "float32[7]"
+          ],
+          [
+            12,
+            "checkpoint_sha256",
+            "digest"
+          ],
+          [
+            13,
+            "proposal_payload_sha256",
+            "digest"
+          ],
+          [
+            14,
+            "reason",
+            "string<=128"
+          ]
+        ]
+      },
+      "path_hash_preimage": {
+        "id": 3,
+        "required_fields": [
+          "schema_version",
+          "application_uuid",
+          "authorization_uuid",
+          "request_uuid",
+          "snapshot_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "mode",
+          "proposal_source",
+          "source_stamp_ns",
+          "authorized_at_ns",
+          "expires_at_ns",
+          "validated_start_external_deg",
+          "validated_target_external_deg",
+          "points"
+        ],
+        "fields": [
+          [
+            1,
+            "schema_version",
+            "uint16"
+          ],
+          [
+            2,
+            "application_uuid",
+            "uuid"
+          ],
+          [
+            3,
+            "authorization_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "request_uuid",
+            "uuid"
+          ],
+          [
+            5,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            6,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            7,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            8,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            9,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            10,
+            "mode",
+            "enum(mode)"
+          ],
+          [
+            11,
+            "proposal_source",
+            "enum(proposal_source)"
+          ],
+          [
+            12,
+            "source_stamp_ns",
+            "int64"
+          ],
+          [
+            13,
+            "authorized_at_ns",
+            "int64"
+          ],
+          [
+            14,
+            "expires_at_ns",
+            "int64"
+          ],
+          [
+            15,
+            "validated_start_external_deg",
+            "float32[7]"
+          ],
+          [
+            16,
+            "validated_target_external_deg",
+            "float32[7]"
+          ],
+          [
+            18,
+            "points",
+            "points"
+          ]
+        ]
+      },
+      "apply_goal_hmac_preimage": {
+        "id": 4,
+        "required_fields": [
+          "schema_version",
+          "application_uuid",
+          "authorization_uuid",
+          "request_uuid",
+          "snapshot_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "mode",
+          "proposal_source",
+          "source_stamp_ns",
+          "authorized_at_ns",
+          "expires_at_ns",
+          "validated_start_external_deg",
+          "validated_target_external_deg",
+          "points",
+          "path_sha256"
+        ],
+        "fields": [
+          [
+            1,
+            "schema_version",
+            "uint16"
+          ],
+          [
+            2,
+            "application_uuid",
+            "uuid"
+          ],
+          [
+            3,
+            "authorization_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "request_uuid",
+            "uuid"
+          ],
+          [
+            5,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            6,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            7,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            8,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            9,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            10,
+            "mode",
+            "enum(mode)"
+          ],
+          [
+            11,
+            "proposal_source",
+            "enum(proposal_source)"
+          ],
+          [
+            12,
+            "source_stamp_ns",
+            "int64"
+          ],
+          [
+            13,
+            "authorized_at_ns",
+            "int64"
+          ],
+          [
+            14,
+            "expires_at_ns",
+            "int64"
+          ],
+          [
+            15,
+            "validated_start_external_deg",
+            "float32[7]"
+          ],
+          [
+            16,
+            "validated_target_external_deg",
+            "float32[7]"
+          ],
+          [
+            18,
+            "points",
+            "points"
+          ],
+          [
+            19,
+            "path_sha256",
+            "digest"
+          ]
+        ]
+      },
+      "result": {
+        "id": 5,
+        "required_fields": [
+          "result_code",
+          "application_uuid",
+          "authorization_uuid",
+          "request_uuid",
+          "snapshot_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "authorization_consumed",
+          "accepted_at_ns",
+          "started_at_ns",
+          "finished_at_ns",
+          "completed_waypoints",
+          "authorized_target_external_deg",
+          "actual_final_external_deg",
+          "applied_path_sha256",
+          "reason"
+        ],
+        "fields": [
+          [
+            1,
+            "result_code",
+            "enum(application_result_code)"
+          ],
+          [
+            2,
+            "application_uuid",
+            "uuid"
+          ],
+          [
+            3,
+            "authorization_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "request_uuid",
+            "uuid"
+          ],
+          [
+            5,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            6,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            7,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            8,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            9,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            10,
+            "authorization_consumed",
+            "bool"
+          ],
+          [
+            11,
+            "accepted_at_ns",
+            "int64"
+          ],
+          [
+            12,
+            "started_at_ns",
+            "int64"
+          ],
+          [
+            13,
+            "finished_at_ns",
+            "int64"
+          ],
+          [
+            14,
+            "completed_waypoints",
+            "uint16"
+          ],
+          [
+            15,
+            "authorized_target_external_deg",
+            "float32[7]"
+          ],
+          [
+            16,
+            "actual_final_external_deg",
+            "float32[7]"
+          ],
+          [
+            17,
+            "applied_path_sha256",
+            "digest"
+          ],
+          [
+            18,
+            "reason",
+            "string<=128"
+          ]
+        ]
+      },
+      "ack": {
+        "id": 6,
+        "required_fields": [
+          "schema_version",
+          "result_code",
+          "ack_uuid",
+          "application_uuid",
+          "authorization_uuid",
+          "request_uuid",
+          "snapshot_uuid",
+          "episode_id",
+          "decision_epoch",
+          "map_revision",
+          "target_revision",
+          "mode",
+          "proposal_source",
+          "authorization_consumed",
+          "accepted_at_ns",
+          "started_at_ns",
+          "finished_at_ns",
+          "completed_waypoints",
+          "authorized_target_external_deg",
+          "actual_final_external_deg",
+          "applied_path_sha256",
+          "result_payload_sha256",
+          "reason"
+        ],
+        "fields": [
+          [
+            1,
+            "schema_version",
+            "uint16"
+          ],
+          [
+            2,
+            "result_code",
+            "enum(application_result_code)"
+          ],
+          [
+            3,
+            "ack_uuid",
+            "uuid"
+          ],
+          [
+            4,
+            "application_uuid",
+            "uuid"
+          ],
+          [
+            5,
+            "authorization_uuid",
+            "uuid"
+          ],
+          [
+            6,
+            "request_uuid",
+            "uuid"
+          ],
+          [
+            7,
+            "snapshot_uuid",
+            "uuid"
+          ],
+          [
+            8,
+            "episode_id",
+            "uint64"
+          ],
+          [
+            9,
+            "decision_epoch",
+            "uint64"
+          ],
+          [
+            10,
+            "map_revision",
+            "uint64"
+          ],
+          [
+            11,
+            "target_revision",
+            "uint64"
+          ],
+          [
+            12,
+            "mode",
+            "enum(mode)"
+          ],
+          [
+            13,
+            "proposal_source",
+            "enum(proposal_source)"
+          ],
+          [
+            14,
+            "authorization_consumed",
+            "bool"
+          ],
+          [
+            15,
+            "accepted_at_ns",
+            "int64"
+          ],
+          [
+            16,
+            "started_at_ns",
+            "int64"
+          ],
+          [
+            17,
+            "finished_at_ns",
+            "int64"
+          ],
+          [
+            18,
+            "completed_waypoints",
+            "uint16"
+          ],
+          [
+            19,
+            "authorized_target_external_deg",
+            "float32[7]"
+          ],
+          [
+            20,
+            "actual_final_external_deg",
+            "float32[7]"
+          ],
+          [
+            21,
+            "applied_path_sha256",
+            "digest"
+          ],
+          [
+            22,
+            "result_payload_sha256",
+            "digest"
+          ],
+          [
+            23,
+            "reason",
+            "string<=128"
+          ]
+        ]
+      },
+      "source_manifest": {
+        "id": 7,
+        "required_fields": [
+          "manifest_version",
+          "source_manifest_json_utf8"
+        ],
+        "fields": [
+          [
+            1,
+            "manifest_version",
+            "uint16"
+          ],
+          [
+            2,
+            "source_manifest_json_utf8",
+            "string<=1048576"
+          ]
+        ]
+      },
+      "checkpoint_allowlist": {
+        "id": 8,
+        "required_fields": [
+          "source_manifest_digests"
+        ],
+        "fields": [
+          [
+            1,
+            "source_manifest_digests",
+            "digest_sequence_sorted<=65535"
+          ]
+        ]
+      }
+    },
+    "digest_rules": {
+      "source_manifest_sha256": "SHA-256 canonical source_manifest domain",
+      "checkpoint_allowlist_sha256": "SHA-256 canonical checkpoint_allowlist domain",
+      "snapshot_payload_sha256": "SHA-256 canonical snapshot domain excluding field 17",
+      "proposal_payload_sha256": "SHA-256 canonical proposal domain excluding field 13",
+      "path_sha256": "SHA-256 canonical path_hash_preimage domain: exact ApplyArmTrajectory semantic fields excluding both path_sha256 and authorization_hmac_sha256; field_count recomputed.",
+      "result_payload_sha256": "SHA-256 canonical result domain; ArmApplicationAck.result_payload_sha256 must equal these exact 32 bytes.",
+      "result_ack_equivalence": "result and ack exactly agree on result_code, application_uuid, authorization_uuid, request_uuid, snapshot_uuid, episode_id, decision_epoch, map_revision, target_revision, authorization_consumed, accepted_at_ns, started_at_ns, finished_at_ns, completed_waypoints, authorized_target_external_deg, actual_final_external_deg, applied_path_sha256, and reason; result/ack applied_path_sha256 byte-exactly equals the authorized full ApplyArmTrajectory path_sha256; result/ack authorized_target_external_deg byte-exactly equals full ApplyArmTrajectory validated_target_external_deg and final points.position_external_deg."
+    },
+    "authorization_hmac": {
+      "algorithm": "HMAC-SHA-256 as specified by RFC 2104 using SHA-256",
+      "message": "canonical apply_goal_hmac_preimage: construct full ApplyArmTrajectory goal by inserting path_sha256 derived from path_hash_preimage, then omit only authorization_hmac_sha256 and recompute field_count.",
+      "key": "exactly 32 random raw bytes loaded from root-readable per-run secret; destroyed at shutdown; unavailable to bridge and runner",
+      "forbidden": [
+        "plain SHA-256(secret || message)",
+        "plain SHA-256(message || secret)",
+        "truncated MAC",
+        "key reuse across runs"
+      ]
+    },
+    "derivation_order": [
+      "serialize path_hash_preimage from exact ApplyArmTrajectory semantic fields excluding path_sha256 and authorization_hmac_sha256 with recomputed field_count",
+      "path_sha256 = SHA-256(path_hash_preimage)",
+      "construct full ApplyArmTrajectory goal by inserting path_sha256",
+      "serialize apply_goal_hmac_preimage from that goal excluding only authorization_hmac_sha256 with recomputed field_count",
+      "authorization_hmac_sha256 = RFC2104 HMAC-SHA256(apply_goal_hmac_preimage)",
+      "serialize result and compute result_payload_sha256 = SHA-256(result)",
+      "construct ack with result_payload_sha256; verify result/ack and target/path equivalence"
+    ]
+  }
+}

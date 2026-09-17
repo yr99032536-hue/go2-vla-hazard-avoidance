@@ -1,0 +1,14 @@
+{
+  "contract": "smolvla_black_box_tombstone",
+  "version": 1,
+  "status": "phase0_contract_only",
+  "runtime_active": false,
+  "tombstoned_symbols": ["ActiveView", "ActiveViewConfig", "ActiveViewPolicy", "ActiveViewSmolVLA", "CustomSmolVLA", "CustomSmolVLAConfig", "CustomSmolVLAPolicy", "SmolVLAActiveView", "SmolVLAWithGuidance"],
+  "tombstoned_path_fragments": ["active_view", "activeview", "custom_model", "custom_smolvla", "modeling_activeview", "modeling_custom_smolvla"],
+  "forbidden_changes": ["LeRobot source", "SmolVLA model source", "model subclass", "policy config or schema", "loader semantics", "token or embedding path", "input dimension", "action dimension", "model head", "checkpoint format", "PEFT", "adapter", "rename map", "checkpoint conversion", "alternate loader", "monkeypatch", "copied LeRobot implementation", "numeric prompt channel"],
+  "required_standard_api": {"class": "lerobot.policies.smolvla.modeling_smolvla.SmolVLAPolicy", "loader": "SmolVLAPolicy.from_pretrained", "preprocessor": "PolicyProcessorPipeline.from_pretrained", "postprocessor": "PolicyProcessorPipeline.from_pretrained", "inference": "policy.select_action", "reset": "policy.reset"},
+  "ast_source_guard": {"project_root": "soarm_nbv", "include_suffixes": [".py"], "exclude_directory_names": ["__pycache__", ".pytest_cache", ".git", "contracts"], "scan_caches": false, "scope": "Bounded module-level and function-local simple-name alias analysis only; no interprocedural, closure, dynamic import, reflection beyond literal getattr, or arbitrary data-flow claim is made.", "approved_policy_module": "lerobot.policies.smolvla.modeling_smolvla", "approved_policy_class": "SmolVLAPolicy", "approved_loader_attribute": "from_pretrained", "forbid": {"class_bases_resolving_to_policy": true, "imports_of_tombstoned_or_nonapproved_policy_modules": true, "simple_import_and_assignment_aliases_resolving_to_policy": true, "simple_alias_assignment_to_policy_or_loader_attributes": true, "setattr_or_delattr_on_policy_or_loader": true, "literal_getattr_alternate_loader_calls": true, "alternate_policy_loader_calls": true, "model_config_head_action_token_adapter_or_peft_assignments": true}, "allowed_call_qualnames": ["SmolVLAPolicy.from_pretrained", "PolicyProcessorPipeline.from_pretrained", "policy.select_action", "policy.reset"]},
+  "lerobot_content_boundary": {"manifest": "source_checkpoint_manifest_v1.json", "must_match": ["abi_source_inventory", "dirty_tree", "direct_imports"]},
+  "supplemental_string_guard": {"forbidden_case_insensitive_substrings": ["activeview", "active_view", "customsmolvla", "custom_smolvla", "modeling_activeview", "modeling_custom_smolvla"], "forbidden_case_sensitive_symbols": ["ActiveView", "CustomSmolVLA", "SmolVLAWithGuidance"]},
+  "only_permitted_future_checkpoint_differences": ["weights", "official dataset-derived state/action normalization state", "training metadata"]
+}

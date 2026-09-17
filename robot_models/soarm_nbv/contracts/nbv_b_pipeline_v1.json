@@ -1,0 +1,93 @@
+{
+  "contract": "nbv_b_pipeline_v1",
+  "status": "implementation_contract",
+  "purpose": "simulation look-ahead NBV teacher distillation into unmodified SmolVLA",
+  "policy_abi": {
+    "observation.images.camera1": {
+      "meaning": "current wrist RGB",
+      "wire_shape_hwc": [240, 320, 3],
+      "dtype": "uint8"
+    },
+    "observation.images.camera2": {
+      "meaning": "current front RGB",
+      "wire_shape_hwc": [480, 640, 3],
+      "dtype": "uint8"
+    },
+    "observation.images.camera3": {
+      "meaning": "ego-centric deterministic local map guidance",
+      "wire_shape_hwc": [480, 640, 3],
+      "dtype": "uint8"
+    },
+    "observation.state": {
+      "meaning": "current SO-Arm joint position",
+      "shape": [7],
+      "dtype": "float32",
+      "unit": "degrees",
+      "joint_order": ["shoulder_pan", "shoulder_lift", "elbow_flex", "elbow_rotate", "wrist_flex", "wrist_roll", "gripper"]
+    },
+    "task": "move the wrist camera to reveal the most useful hidden map area",
+    "action": {
+      "meaning": "next SO-Arm joint target",
+      "shape": [7],
+      "dtype": "float32",
+      "unit": "degrees"
+    }
+  },
+  "camera3_raster": {
+    "orientation": "ego-centric robot-forward-up",
+    "extent_m": [6.4, 4.8],
+    "meters_per_pixel": 0.01,
+    "center": "base_link planar position",
+    "height_filter_m": [0.05, 2.2],
+    "palette_rgb": {
+      "unknown": [16, 24, 32],
+      "free": [55, 78, 91],
+      "occupied": [224, 232, 236],
+      "occluded": [210, 135, 24],
+      "robot": [0, 220, 118]
+    },
+    "prohibited": ["simulator RGB background", "ground-truth object class", "text", "future camera observation", "teacher score", "teacher-selected gap marker", "teacher-selected view marker"]
+  },
+  "mapping": {
+    "volume": "one sparse TSDF in ROS map frame",
+    "voxel_size_m": 0.02,
+    "truncation_m": 0.08,
+    "sources": ["front RGB-D", "wrist RGB-D"],
+    "registration": "calibrated TF map<-camera at the source image timestamp",
+    "rule": "both sources update the same volume continuously while the base and/or arm move; no image-space blending",
+    "frame_admission": {
+      "maximum_rgb_depth_skew_ms": 50.0,
+      "minimum_valid_depth_ratio": 0.05,
+      "maximum_camera_linear_speed_m_s": 2.0,
+      "maximum_camera_angular_speed_deg_s": 240.0,
+      "tf": "map<-camera must exist at the frame timestamp",
+      "pose_jump": "reject the affected frame only; do not stop mapping"
+    }
+  },
+  "teacher": {
+    "type": "simulation RGB-D look-ahead",
+    "candidate_source": "collision-checked seven-motor targets generated around the selected occluded region",
+    "evaluation": "fuse every candidate wrist RGB-D into an independent clone of the same baseline TSDF",
+    "score": "new surface voxels + 0.1*new known voxels - 0.02*normalized joint motion",
+    "label": "selected candidate seven-motor target",
+    "privileged_data_policy": "candidate look-ahead RGB-D and scores are teacher-only and never enter SmolVLA inputs",
+    "label_capture_settle": {
+      "scope": "teacher label finalization only; ordinary TSDF fusion continues while moving",
+      "duration_s": 0.35,
+      "maximum_base_linear_m_s": 0.03,
+      "maximum_base_angular_deg_s": 3.0,
+      "maximum_joint_speed_deg_s": 3.0
+    }
+  },
+  "sample_transaction": {
+    "freeze": ["map_revision", "target_revision", "wrist_stamp", "front_stamp", "state_stamp", "guidance_raster_sha256"],
+    "record": ["wrist RGB", "front RGB", "exact guidance RGB", "current joints", "selected target joints", "candidate_id", "information gain"],
+    "accept_only_if": ["candidate feasible", "trajectory safety accepted", "trajectory completed", "settled final joint target matches label", "RGB/map/state timestamps within contract bounds"]
+  },
+  "deployment": {
+    "transport": "OBS3 eight-frame ZMQ message",
+    "inference": "standard SmolVLAPolicy.from_pretrained and policy.select_action",
+    "authority": "proposal only; supervisor validates limits, collision clearance, staleness, and trajectory before application",
+    "modes": ["shadow", "learned"]
+  }
+}
